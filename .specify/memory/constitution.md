@@ -1,50 +1,40 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report:
+- Version change: [CONSTITUTION_VERSION] -> 1.0.0
+- List of modified principles: Initialized principles (I. Strict Discount Control, II. Real-time Weight-based Pricing, III. Secure OTP Authentication, IV. Client-Centric CRM & Tagging, V. Double-Portal Architecture)
+- Added sections: Tech Stack & Architecture Constraints, Quality Gates & Code Standards
+- Templates requiring updates: ✅ Updated .specify/memory/constitution.md
+- Follow-up TODOs: None
+-->
+# Aurum POS & E-Commerce Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Strict Discount Control (NON-NEGOTIABLE)
+Employees cannot apply discounts higher than the admin-configured limit. Any sale exceeding the assigned threshold must be rejected at the API/business-logic layer, regardless of client-side overrides. Every transaction must log the employee ID, customer ID, requested discount, and final approved amount for auditing.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Real-time Weight-based Pricing
+Jewelry pricing is volatile and must be calculated dynamically. The formula is: `Total Price = (Weight in grams * Live Gold Rate/gram) + Making Charges + Stone Value + Taxes`. The base calculations and gold rate fetching must reside in a single, central utility module.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Secure OTP Authentication
+Every transaction completed by employees or checked out by customers requires a valid One-Time Password (OTP) verification before final database commit. This ensures double-opt-in consent, prevents unauthorized sales, and validates client credentials.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Client-Centric CRM & Tagging
+Client data must be saved securely upon checkout. Employees must be able to categorize customers with tags (e.g., `VIP`, `Frequent Buyer`, `Wants Rings`, `Referred`). These tags will influence eligibility for special discounts, automatic notifications, or customized product recommendations.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Double-Portal Architecture
+The application must present two separate, secure user flows: a premium, aesthetic customer-facing catalog/checkout site and a high-performance, data-dense employee point-of-sale (POS) terminal. 
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+## Tech Stack & Architecture Constraints
+- **Core Stack**: HTML, CSS, and Javascript.
+- **Styling**: Vanilla CSS with modern custom properties for glassmorphism, gold gradients, and responsive grids. No Tailwind unless requested.
+- **Routing & State**: Clean separation of state between client, employee, and admin views to prevent privilege escalation.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
-
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+## Quality Gates & Code Standards
+- **Testing**: All discount limits, price calculators, and OTP state transitions must have unit tests.
+- **Access Control**: Admin configuration (like changing maximum employee discounts) must be separated from general employee capabilities.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+All new features, code changes, and code reviews must verify compliance with this constitution. Any amendments to this constitution require a documentation update, version bump, and migration plan if database schemas are affected.
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
-
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-05-23 | **Last Amended**: 2026-05-23

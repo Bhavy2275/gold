@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aurelia Gold Jewellers | E-Commerce & Staff POS</title>
+    <!-- Outfit Font & Stylesheet -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+    <!-- Header / Ticker / Navigation -->
+    <header>
+        <div class="logo-container">
+            <span class="logo-icon">⚜</span>
+            <span class="logo-text">AURELIA</span>
+        </div>
+
+        <div id="live-gold-ticker" class="live-price-ticker">
+            <span>Live Gold Price:</span>
+            <span class="value">₹0.00/g</span>
+            <span class="trend-indicator"></span>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-view="customer">Catalog</button>
+            <button class="nav-tab" data-view="employee">Staff Area</button>
+            <button class="nav-tab" data-view="owner">Owner Decisions</button>
+            <button class="nav-tab" data-view="admin">Admin Dashboard</button>
+        </div>
+
+        <div class="cart-trigger-container">
+            <button id="cart-trigger" class="btn-primary" style="display: flex; align-items: center; gap: 8px; padding: 8px 18px;">
+                🛒 Cart
+                <span id="cart-badge-count" class="cart-badge" style="display: none;">0</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Views -->
+    <main>
+
+        <!-- ================= CUSTOMER PORTAL ================= -->
+        <section id="customer-view" class="view-section active">
+            <div class="catalog-header">
+                <h2>Exquisite Gold Catalogue</h2>
+                <input type="text" id="search-products" class="search-input" placeholder="Search rings, necklaces, etc...">
+            </div>
+
+            <!-- Customer Bargain Request Tracking -->
+            <div class="glass-card" style="margin-bottom: 24px; padding: 16px 24px;">
+                <h3 style="font-size: 14px; text-transform: uppercase; color: var(--gold-light); letter-spacing: 1px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+                    <span>🤝 Check Negotiated Deals</span>
+                    <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal;">Search by phone to finalize approved prices</span>
+                </h3>
+                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                    <div style="flex-grow: 1; min-width: 250px;">
+                        <input type="tel" id="customer-bargain-phone" class="form-control" style="padding: 8px 14px; font-size: 13px;" placeholder="Enter your 10-digit mobile number">
+                    </div>
+                    <button type="button" id="customer-check-bargain-btn" class="btn-primary" style="padding: 8px 20px; font-size: 13px;">Check My Deals</button>
+                </div>
+                <div id="customer-deals-status-list" style="margin-top: 14px; max-height: 200px; overflow-y: auto; display: none;">
+                    <!-- Deals status shown dynamically -->
+                </div>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <span style="font-size: 13px; text-transform: uppercase; color: var(--text-secondary); margin-right: 12px; font-weight: 600;">Filter:</span>
+                <div class="catalog-filters" style="display: inline-flex;">
+                    <button class="filter-btn active" data-category="All">All Items</button>
+                    <button class="filter-btn" data-category="Rings">Rings</button>
+                    <button class="filter-btn" data-category="Earrings">Earrings</button>
+                    <button class="filter-btn" data-category="Necklaces">Necklaces</button>
+                </div>
+            </div>
+
+            <div id="products-grid-container" class="products-grid">
+                <!-- Products dynamically loaded -->
+            </div>
+        </section>
+
+        <!-- CUSTOMER CHECKOUT VIEW -->
+        <section id="customer-checkout-view" class="view-section">
+            <h2 style="margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Order Checkout Details</h2>
+            
+            <div style="display: grid; grid-template-columns: 1fr 400px; gap: 40px; align-items: start;">
+                <form id="customer-checkout-form" class="glass-card">
+                    <h3 style="margin-bottom: 20px; font-weight: 600; color: var(--gold-light);">1. Contact Details</h3>
+                    <div class="form-group">
+                        <label for="checkout-name">Full Name *</label>
+                        <input type="text" id="checkout-name" class="form-control" placeholder="Enter your full name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="checkout-phone">10-Digit Mobile Number *</label>
+                        <input type="tel" id="checkout-phone" class="form-control" placeholder="e.g. 9876543210" pattern="\d{10}" required>
+                        <small style="color: var(--text-muted); font-size: 11px;">An SMS OTP code will be sent to this number to authorize the order.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="checkout-email">Email Address</label>
+                        <input type="email" id="checkout-email" class="form-control" placeholder="e.g. customer@example.com">
+                    </div>
+
+                    <h3 style="margin-top: 30px; margin-bottom: 20px; font-weight: 600; color: var(--gold-light);">2. Payment Option</h3>
+                    <div class="form-group">
+                        <label for="checkout-payment-method">Method *</label>
+                        <select id="checkout-payment-method" class="form-control" required>
+                            <option value="Card">Credit/Debit Card</option>
+                            <option value="UPI">UPI</option>
+                            <option value="Cash">Cash on Delivery</option>
+                        </select>
+                    </div>
+
+                    <!-- Bargaining section -->
+                    <div style="margin-top: 24px; padding: 16px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; font-weight: 600; text-transform: uppercase; color: var(--gold-light);">
+                            <input type="checkbox" id="checkout-bargain-toggle">
+                            Propose a Bargain Price?
+                        </label>
+                        <div id="checkout-bargain-fields" style="display: none; margin-top: 12px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="checkout-proposed-price">Proposed Price (₹) *</label>
+                                <input type="number" id="checkout-proposed-price" class="form-control" min="1" placeholder="Enter your proposed price">
+                                <small style="color: var(--warning); font-size: 11px; display: block; margin-top: 4px;">Submit for owner approval. We will save your client details immediately.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; margin-top: 30px;">
+                        <button type="button" class="filter-btn" style="flex: 1;" onclick="switchPortal('customer')">Back to Catalog</button>
+                        <button type="submit" id="checkout-submit-btn" class="btn-primary" style="flex: 2; padding: 12px;">Send OTP & Verify Order</button>
+                    </div>
+                </form>
+
+                <div class="glass-card">
+                    <h3 style="margin-bottom: 20px; font-weight: 600; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Order Summary</h3>
+                    <div id="checkout-items-summary" style="margin-bottom: 20px;">
+                        <!-- Checkout summary items loaded dynamically -->
+                    </div>
+                    <div class="cart-summary" style="margin-bottom: 0;">
+                        <div class="summary-row">
+                            <span>Subtotal</span>
+                            <span id="checkout-subtotal">₹0.00</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>GST Tax (3%)</span>
+                            <span id="checkout-tax">₹0.00</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>Grand Total</span>
+                            <span id="checkout-total">₹0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CUSTOMER BARGAIN BILLING VIEW -->
+        <section id="customer-bargain-billing-view" class="view-section">
+            <h2 style="margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; color: var(--gold-light);">Negotiated Order Billing</h2>
+            
+            <div style="display: grid; grid-template-columns: 1fr 450px; gap: 40px; align-items: start;">
+                <div class="glass-card">
+                    <h3 style="margin-bottom: 20px; font-weight: 600; color: var(--gold-light); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Customer & Deal Info</h3>
+                    <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.8;">
+                        <p><strong>Client Name:</strong> <span id="bargain-bill-name" style="color: var(--text-primary);"></span></p>
+                        <p><strong>Phone Number:</strong> <span id="bargain-bill-phone" style="color: var(--text-primary);"></span></p>
+                        <p><strong>Email Address:</strong> <span id="bargain-bill-email" style="color: var(--text-primary);"></span></p>
+                        <p><strong>Deal ID:</strong> <span id="bargain-bill-deal-id" style="color: var(--gold-primary); font-weight: 600;"></span></p>
+                    </div>
+
+                    <h3 style="margin-bottom: 20px; font-weight: 600; color: var(--gold-light); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Product Specifications</h3>
+                    <div id="bargain-bill-specs-container" style="font-size: 13px; background: rgba(255,255,255,0.02); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+                        <!-- Product spec details like weight, making charges, stone value, live rate loaded dynamically -->
+                    </div>
+
+                    <form id="bargain-billing-payment-form">
+                        <div class="form-group">
+                            <label for="bargain-bill-payment-method">Payment Option *</label>
+                            <select id="bargain-bill-payment-method" class="form-control" required>
+                                <option value="UPI">UPI</option>
+                                <option value="Card">Credit/Debit Card</option>
+                                <option value="Cash">Cash on Delivery</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 12px; margin-top: 30px;">
+                            <button type="button" class="filter-btn" style="flex: 1;" onclick="switchPortal('customer')">Back to Catalog</button>
+                            <button type="submit" class="btn-primary" style="flex: 2; padding: 12px;">Confirm & Pay (Verify via OTP)</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="glass-card">
+                    <h3 style="margin-bottom: 20px; font-weight: 600; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; color: var(--gold-light);">Billing Calculation Summary</h3>
+                    <div class="cart-summary" style="margin-bottom: 0;">
+                        <div class="summary-row">
+                            <span>Catalog Subtotal</span>
+                            <span id="bargain-bill-original-subtotal">₹0.00</span>
+                        </div>
+                        <div class="summary-row" style="color: var(--success);">
+                            <span>Negotiated Discount</span>
+                            <span id="bargain-bill-discount-amount">-₹0.00</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Subtotal (After Discount)</span>
+                            <span id="bargain-bill-discounted-subtotal">₹0.00</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>GST Tax (3%)</span>
+                            <span id="bargain-bill-tax">₹0.00</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>Grand Total (Agreed Price)</span>
+                            <span id="bargain-bill-total" style="color: var(--gold-primary);">₹0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= EMPLOYEE PORTAL ================= -->
+        <!-- Passcode Lock Screen -->
+        <section id="employee-lock-view" class="view-section">
+            <div class="glass-card lock-screen">
+                <span style="font-size: 48px; display: block; margin-bottom: 16px;">🔑</span>
+                <h3 style="margin-bottom: 8px;">Employee Terminal Portal</h3>
+                <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 24px;">Please select your name and input the staff access passcode</p>
+                
+                <form id="employee-login-form">
+                    <div class="form-group" style="text-align: left;">
+                        <label for="employee-select">Select Employee</label>
+                        <select id="employee-select" class="form-control" style="background: var(--bg-secondary); margin-bottom: 12px;">
+                            <option value="emp-101">Rahul Sharma (Sales Associate)</option>
+                            <option value="emp-102">Priya Patel (Store Manager)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="text-align: left;">
+                        <label for="employee-passcode">Staff Access Code</label>
+                        <input type="password" id="employee-passcode" class="form-control" placeholder="Enter access passcode" required>
+                        <small style="color: var(--text-muted); display: block; margin-top: 4px;">Default code: <code>gold123</code></small>
+                    </div>
+                    <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px; padding: 12px;">Authorize Access</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Employee Workspace -->
+        <section id="employee-portal-view" class="view-section">
+            <div class="employee-badge" id="pos-employee-badge-container">
+                <!-- Employee rep details and discount caps loaded dynamically -->
+            </div>
+
+            <div class="portal-grid">
+                <div class="portal-sidebar glass-card">
+                    <h3 style="font-size: 14px; text-transform: uppercase; color: var(--gold-primary); letter-spacing: 1px; margin-bottom: 12px; padding-left: 12px;">Menu</h3>
+                    <button class="sidebar-btn employee-sidebar-btn active" data-subview="pos">🛒 POS Terminal</button>
+                    <button class="sidebar-btn employee-sidebar-btn" data-subview="deals">🤝 Approved Deals <span id="emp-deals-badge" class="cart-badge" style="display: none; position: static; width: auto; height: auto; padding: 2px 6px; font-size: 11px; margin-left: 6px;">0</span></button>
+                    <button class="sidebar-btn employee-sidebar-btn" data-subview="crm">👥 CRM Directory</button>
+                    <button class="sidebar-btn employee-sidebar-btn" data-subview="leaderboard">🏆 Rep Leaderboard</button>
+                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 12px 0;">
+                    <button id="employee-logout-btn" class="sidebar-btn" style="color: var(--error)">Log Out rep</button>
+                </div>
+
+                <div class="portal-content">
+                    
+                    <!-- SUBVIEW: POS Builder -->
+                    <div id="employee-pos-view" class="employee-sub-view active">
+                        <div class="pos-container">
+                            <div class="glass-card">
+                                <h3 style="margin-bottom: 20px; font-weight: 600; color: var(--gold-light); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Order Details</h3>
+                                
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                                    <div class="form-group">
+                                        <label for="pos-client-phone">Client Phone (10-Digit) *</label>
+                                        <div style="display: flex; gap: 8px;">
+                                            <input type="tel" id="pos-client-phone" class="form-control" placeholder="Client Mobile">
+                                            <button type="button" id="pos-client-lookup-btn" class="btn-primary" style="padding: 0 16px;">Search</button>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="pos-client-name">Client Name *</label>
+                                        <input type="text" id="pos-client-name" class="form-control" placeholder="Client Name">
+                                    </div>
+                                </div>
+                                
+                                <div style="display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 20px;">
+                                    <div class="form-group">
+                                        <label for="pos-client-email">Client Email</label>
+                                        <input type="email" id="pos-client-email" class="form-control" placeholder="Client Email">
+                                    </div>
+                                    <div id="pos-client-status" style="font-size: 12px; color: var(--text-secondary);">
+                                        <!-- CRM status indicator -->
+                                    </div>
+                                </div>
+
+                                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 24px 0;">
+                                <h3 style="margin-bottom: 16px; font-weight: 600; color: var(--gold-light);">Item Builder</h3>
+                                <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+                                    <div style="flex: 1;">
+                                        <select id="pos-product-select" class="form-control">
+                                            <!-- Dynamically filled -->
+                                        </select>
+                                    </div>
+                                    <button type="button" class="btn-primary" onclick="addProductToPOSCart()">Add Item</button>
+                                </div>
+
+                                <table class="crm-table" style="margin-bottom: 24px; font-size: 13px;">
+                                    <thead>
+                                        <tr>
+                                            <th>Product Name</th>
+                                            <th>Qty</th>
+                                            <th>Unit Price</th>
+                                            <th style="text-align: right;">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pos-cart-tbody">
+                                        <!-- POS cart items loaded dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <form id="pos-checkout-form" class="glass-card">
+                                <h3 style="margin-bottom: 20px; font-weight: 600; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Checkout Totals</h3>
+                                
+                                <div class="form-group">
+                                    <label for="pos-discount">Employee Discount Override (%)</label>
+                                    <input type="number" id="pos-discount" class="form-control" min="0" max="100" step="0.5" value="0" oninput="updatePOSDiscountDisplay()">
+                                    <small style="color: var(--text-muted); font-size: 10px;">Cannot exceed your active employee discount cap limit.</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="pos-payment-method">Payment Method *</label>
+                                    <select id="pos-payment-method" class="form-control" required>
+                                        <option value="Card">Credit Card</option>
+                                        <option value="Cash">Cash / In-Store Cash</option>
+                                        <option value="UPI">UPI</option>
+                                    </select>
+                                </div>
+
+                                <div class="cart-summary" style="margin-top: 20px; margin-bottom: 24px;">
+                                    <div class="summary-row">
+                                        <span>Subtotal</span>
+                                        <span id="pos-subtotal">₹0.00</span>
+                                    </div>
+                                    <div class="summary-row">
+                                        <span>GST Tax (3%)</span>
+                                        <span id="pos-tax">₹0.00</span>
+                                    </div>
+                                    <div class="summary-row total">
+                                        <span>Grand Total</span>
+                                        <span id="pos-total">₹0.00</span>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn-primary" style="width: 100%; padding: 12px;">Finalize POS checkout</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- SUBVIEW: Approved Deals -->
+                    <div id="employee-deals-view" class="employee-sub-view">
+                        <div class="glass-card">
+                            <h3 style="margin-bottom: 20px; font-weight: 600; color: var(--gold-light);">Approved Negotiated Deals</h3>
+                            <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 20px;">The following price bargain requests have been approved by the Owner and are pending final in-store checkout.</p>
+                            <div class="table-container">
+                                <table class="crm-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Deal ID</th>
+                                            <th>Client Info</th>
+                                            <th>Original Total</th>
+                                            <th>Agreed Price</th>
+                                            <th style="text-align: right;">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="employee-deals-tbody">
+                                        <!-- Dynamically loaded approved deals -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SUBVIEW: CRM Dashboard -->
+                    <div id="employee-crm-view" class="employee-sub-view">
+                        <div class="glass-card">
+                            <div class="catalog-header" style="margin-bottom: 20px;">
+                                <h3>Customer CRM Directory</h3>
+                                <input type="text" id="crm-search-input" class="search-input" placeholder="Search by name, phone, tags...">
+                            </div>
+
+                            <div class="table-container">
+                                <table class="crm-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Client Name</th>
+                                            <th>Phone</th>
+                                            <th>Email</th>
+                                            <th>CRM Tags</th>
+                                            <th style="text-align: right;">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="crm-tbody">
+                                        <!-- CRM directory entries dynamically loaded -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SUBVIEW: Leaderboard -->
+                    <div id="employee-leaderboard-view" class="employee-sub-view">
+                        <h3 style="margin-bottom: 20px; font-weight: 600; color: var(--gold-light);">Employee Sales & Commission Progress</h3>
+                        <div id="employee-leaderboard-list">
+                            <!-- Leaderboard list cards loaded dynamically -->
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= OWNER PORTAL ================= -->
+        <!-- Passcode Lock Screen -->
+        <section id="owner-lock-view" class="view-section">
+            <div class="glass-card lock-screen">
+                <span style="font-size: 48px; display: block; margin-bottom: 16px;">👑</span>
+                <h3 style="margin-bottom: 8px;">Gold Shop Owner Portal</h3>
+                <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 24px;">Please input the secure owner access passcode</p>
+                
+                <form id="owner-login-form">
+                    <div class="form-group" style="text-align: left;">
+                        <label for="owner-passcode">Owner Passcode</label>
+                        <input type="password" id="owner-passcode" class="form-control" placeholder="Enter owner passcode" required>
+                        <small style="color: var(--text-muted); display: block; margin-top: 4px;">Default code: <code>owner123</code></small>
+                    </div>
+                    <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px; padding: 12px;">Authorize Owner Access</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Owner Dashboard Panel -->
+        <section id="owner-portal-view" class="view-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+                <h2>Shop Owner Decision Center</h2>
+                <button id="owner-logout-btn" class="btn-primary" style="background: rgba(255, 255, 255, 0.05); color: var(--text-primary); border: 1px solid var(--border-color);">Logout Owner</button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 30px;">
+                <div class="glass-card">
+                    <h3 style="margin-bottom: 20px; font-weight: 600; color: var(--gold-light);">Pending Price Bargain Proposals</h3>
+                    <div class="table-container">
+                        <table class="crm-table">
+                            <thead>
+                                <tr>
+                                    <th>Client Info</th>
+                                    <th>Items</th>
+                                    <th>Original Price</th>
+                                    <th>Proposed Price</th>
+                                    <th style="text-align: right;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="owner-deals-tbody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="glass-card">
+                    <h3 style="margin-bottom: 20px; font-weight: 600; color: var(--gold-light);">Negotiated Deal History</h3>
+                    <div id="owner-history-container" style="max-height: 400px; overflow-y: auto;">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= ADMIN PORTAL ================= -->
+        <!-- Passcode Lock Screen -->
+        <section id="admin-lock-view" class="view-section">
+            <div class="glass-card lock-screen">
+                <span style="font-size: 48px; display: block; margin-bottom: 16px;">🛡</span>
+                <h3 style="margin-bottom: 8px;">System Admin Workspace</h3>
+                <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 24px;">Please input the secure administrator access code</p>
+                
+                <form id="admin-login-form">
+                    <div class="form-group" style="text-align: left;">
+                        <label for="admin-passcode">Admin Passcode</label>
+                        <input type="password" id="admin-passcode" class="form-control" placeholder="Enter admin passcode" required>
+                        <small style="color: var(--text-muted); display: block; margin-top: 4px;">Default code: <code>admin123</code></small>
+                    </div>
+                    <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px; padding: 12px;">Authorize Admin</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Admin Dashboard Panel -->
+        <section id="admin-portal-view" class="view-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+                <h2>System Administrator Dashboard</h2>
+                <button id="admin-logout-btn" class="btn-primary" style="background: rgba(255, 255, 255, 0.05); color: var(--text-primary); border: 1px solid var(--border-color);">Logout Admin</button>
+            </div>
+
+            <div style="margin-bottom: 24px; display: flex; gap: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;" class="no-print">
+                <button class="filter-btn admin-tab-btn active" data-subview="settings">Settings & Analytics</button>
+                <button class="filter-btn admin-tab-btn" data-subview="staff">Staff Management</button>
+                <button class="filter-btn admin-tab-btn" data-subview="products">Product Management</button>
+            </div>
+
+            <!-- Admin Subview 1: Settings & Analytics -->
+            <div id="admin-settings-subview" class="admin-subview active">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+                    <!-- Settings Panel 1: Gold rate updates -->
+                    <form id="admin-rate-form" class="glass-card">
+                        <h3 style="margin-bottom: 20px; font-weight: 600; color: var(--gold-light); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Live Metal Pricing Settings</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(212,175,55,0.05); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+                            <span>Current Gold Rate:</span>
+                            <span id="admin-current-rate" style="font-size: 24px; font-weight: 700; color: var(--gold-primary);">₹7,500.00/g</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="admin-gold-rate">New Gold Rate per Gram (₹) *</label>
+                            <input type="number" id="admin-gold-rate" class="form-control" min="1" step="0.01" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="admin-rate-pass">Confirm Admin Password *</label>
+                            <input type="password" id="admin-rate-pass" class="form-control" placeholder="Enter admin password" required>
+                        </div>
+
+                        <button type="submit" class="btn-primary" style="margin-top: 10px; width: 100%; padding: 12px;">Update Live Gold Rate</button>
+                    </form>
+
+                    <!-- Settings Panel 2: Discount caps -->
+                    <form id="admin-limit-form" class="glass-card">
+                        <h3 style="margin-bottom: 20px; font-weight: 600; color: var(--gold-light); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Employee Discount Limit Cap</h3>
+                        
+                        <div class="form-group">
+                            <label for="admin-limit-employee">Select Employee Representative</label>
+                            <select id="admin-limit-employee" class="form-control">
+                                <!-- Filled dynamically -->
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="admin-limit-value">New Maximum Discount Cap (%) *</label>
+                            <input type="number" id="admin-limit-value" class="form-control" min="0" max="100" step="0.5" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="admin-limit-pass">Confirm Admin Password *</label>
+                            <input type="password" id="admin-limit-pass" class="form-control" placeholder="Enter admin password" required>
+                        </div>
+
+                        <button type="submit" class="btn-primary" style="margin-top: 10px; width: 100%; padding: 12px;">Save Employee Limits</button>
+                    </form>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 30px;">
+                    <!-- Employee status listing table -->
+                    <div class="glass-card">
+                        <h3 style="margin-bottom: 20px; font-weight: 600; color: var(--gold-light);">Employee Profiles & Discount Cap Status</h3>
+                        <table class="crm-table">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Role</th>
+                                    <th>Discount Cap</th>
+                                    <th>Sales Volume</th>
+                                </tr>
+                            </table>
+                            <div style="max-height: 250px; overflow-y: auto;">
+                                <table class="crm-table">
+                                    <tbody id="admin-limits-tbody">
+                                        <!-- Dynamically loaded -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Leaderboard on admin dashboard -->
+                        <div class="glass-card" style="padding: 20px;">
+                            <h3 style="margin-bottom: 20px; font-weight: 600; color: var(--gold-light); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Employee leaderboard</h3>
+                            <div id="admin-leaderboard-container">
+                                <!-- Filled dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Subview 2: Staff Management -->
+                <div id="admin-staff-subview" class="admin-subview" style="display: none;">
+                    <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 30px;">
+                        <div class="glass-card">
+                            <h3 style="margin-bottom: 20px; font-weight: 600; color: var(--gold-light);">Registered Staff Members</h3>
+                            <div class="table-container">
+                                <table class="crm-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Role</th>
+                                            <th>Discount Cap</th>
+                                            <th>Sales Total</th>
+                                            <th style="text-align: right;">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-staff-tbody">
+                                        <!-- Populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <form id="admin-add-staff-form" class="glass-card">
+                            <h3 style="margin-bottom: 20px; font-weight: 600; color: var(--gold-light); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Add New Staff Member</h3>
+                            <div class="form-group">
+                                <label for="admin-staff-name">Full Name *</label>
+                                <input type="text" id="admin-staff-name" class="form-control" placeholder="e.g. Amit Sharma" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-staff-role">Role *</label>
+                                <select id="admin-staff-role" class="form-control" required>
+                                    <option value="Sales Associate">Sales Associate</option>
+                                    <option value="Store Manager">Store Manager</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-staff-discount">Max Discount Cap (%) *</label>
+                                <input type="number" id="admin-staff-discount" class="form-control" min="0" max="100" step="0.5" value="10" required>
+                            </div>
+                            <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px; padding: 12px;">Create Staff Profile</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Admin Subview 3: Product Management -->
+                <div id="admin-products-subview" class="admin-subview" style="display: none;">
+                    <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 30px;">
+                        <div class="glass-card">
+                            <h3 style="margin-bottom: 20px; font-weight: 600; color: var(--gold-light);">Jewelry Product Directory</h3>
+                            <div class="table-container">
+                                <table class="crm-table" style="font-size: 13px;">
+                                    <thead>
+                                        <tr>
+                                            <th>Product Details</th>
+                                            <th>Category</th>
+                                            <th>Specs</th>
+                                            <th>Stock</th>
+                                            <th>Price (₹)</th>
+                                            <th style="text-align: right;">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-products-tbody">
+                                        <!-- Populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <form id="admin-add-product-form" class="glass-card">
+                            <h3 style="margin-bottom: 20px; font-weight: 600; color: var(--gold-light); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Add New Jewelry Product</h3>
+                            <div class="form-group">
+                                <label for="admin-prod-name">Product Name *</label>
+                                <input type="text" id="admin-prod-name" class="form-control" placeholder="e.g. 22K Gold Bangles" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-prod-category">Category *</label>
+                                <select id="admin-prod-category" class="form-control" required>
+                                    <option value="Rings">Rings</option>
+                                    <option value="Earrings">Earrings</option>
+                                    <option value="Necklaces">Necklaces</option>
+                                    <option value="Bracelets">Bracelets</option>
+                                </select>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div class="form-group">
+                                    <label for="admin-prod-weight">Weight (g) *</label>
+                                    <input type="number" id="admin-prod-weight" class="form-control" min="0.1" step="0.01" placeholder="e.g. 10.5" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="admin-prod-making">Making/g (₹) *</label>
+                                    <input type="number" id="admin-prod-making" class="form-control" min="0" step="10" placeholder="e.g. 450" required>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div class="form-group">
+                                    <label for="admin-prod-stone">Stone Value (₹) *</label>
+                                    <input type="number" id="admin-prod-stone" class="form-control" min="0" step="100" placeholder="e.g. 15000" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="admin-prod-stock">Stock Qty *</label>
+                                    <input type="number" id="admin-prod-stock" class="form-control" min="0" step="1" placeholder="e.g. 5" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-prod-image">Image URL</label>
+                                <input type="url" id="admin-prod-image" class="form-control" placeholder="Optional Unsplash image URL">
+                            </div>
+                            <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px; padding: 12px;">Add Product to Catalog</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ================= MODALS & OVERLAYS ================= -->
+
+    <!-- CUSTOMER CART DRAWER -->
+    <div id="cart-overlay" class="drawer-overlay"></div>
+    <div id="cart-drawer" class="drawer">
+        <div class="drawer-header">
+            <h3>Your Shopping Cart</h3>
+            <button id="cart-close-btn" class="drawer-close">✖</button>
+        </div>
+
+        <div id="cart-items-container" class="cart-items-list">
+            <!-- Dynamically populated cart items -->
+        </div>
+
+        <div class="cart-summary">
+            <div class="summary-row">
+                <span>Subtotal:</span>
+                <span id="cart-subtotal">₹0.00</span>
+            </div>
+            <div class="summary-row">
+                <span>GST Tax (3%):</span>
+                <span id="cart-tax">₹0.00</span>
+            </div>
+            <div class="summary-row total">
+                <span>Grand Total:</span>
+                <span id="cart-total">₹0.00</span>
+            </div>
+        </div>
+
+        <button id="checkout-btn-drawer" class="btn-primary" style="width: 100%; padding: 14px; font-size: 16px;" onclick="proceedToCheckout()" disabled>
+            Proceed to Checkout
+        </button>
+    </div>
+
+    <!-- CUSTOMER OTP MODAL -->
+    <div id="otp-modal-overlay" class="modal-overlay">
+        <div class="modal glass-card">
+            <div class="modal-header">
+                <span class="modal-title">Verification Code Needed</span>
+                <button type="button" id="otp-modal-close" style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; float: right; font-size: 18px;">✖</button>
+            </div>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">
+                An authorization code was simulated on the screen. Please look at the pop-up notification at the bottom left, copy the 6-digit code, and enter it below.
+            </p>
+            <form id="otp-verify-form">
+                <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 24px;">
+                    <input type="text" id="otp-c1" class="form-control otp-code-inp" style="width: 45px; text-align: center; font-size: 20px; font-weight: 700;" maxlength="1" pattern="\d" required>
+                    <input type="text" id="otp-c2" class="form-control otp-code-inp" style="width: 45px; text-align: center; font-size: 20px; font-weight: 700;" maxlength="1" pattern="\d" required>
+                    <input type="text" id="otp-c3" class="form-control otp-code-inp" style="width: 45px; text-align: center; font-size: 20px; font-weight: 700;" maxlength="1" pattern="\d" required>
+                    <input type="text" id="otp-c4" class="form-control otp-code-inp" style="width: 45px; text-align: center; font-size: 20px; font-weight: 700;" maxlength="1" pattern="\d" required>
+                    <input type="text" id="otp-c5" class="form-control otp-code-inp" style="width: 45px; text-align: center; font-size: 20px; font-weight: 700;" maxlength="1" pattern="\d" required>
+                    <input type="text" id="otp-c6" class="form-control otp-code-inp" style="width: 45px; text-align: center; font-size: 20px; font-weight: 700;" maxlength="1" pattern="\d" required>
+                </div>
+                <div style="text-align: center; font-size: 12px; color: var(--text-secondary); margin-bottom: 20px;">
+                    Code expires in: <span id="otp-countdown" style="font-weight: 700; color: var(--warning)">05:00</span>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; padding: 12px;">Confirm & Finalize Order</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- CRM CLIENT DETAILS MODAL (STAFF VIEW) -->
+    <div id="crm-modal-overlay" class="modal-overlay">
+        <div class="modal glass-card" style="max-width: 600px;">
+            <div class="modal-header">
+                <span class="modal-title">Client CRM Profile</span>
+                <button type="button" id="crm-modal-close" style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; float: right; font-size: 18px;">✖</button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div>
+                    <h3 id="crm-client-name" style="font-weight: 700; color: var(--gold-light);">Customer Name</h3>
+                    <p style="font-size: 13px; margin-top: 4px;">Phone: <span id="crm-client-phone" style="font-weight: 600;">9999999999</span></p>
+                    <p style="font-size: 13px;">Email: <span id="crm-client-email">email@example.com</span></p>
+                    <p style="font-size: 13px; color: var(--text-muted)">Joined: <span id="crm-client-joined">2026-05-23</span></p>
+                </div>
+                <div>
+                    <h4 style="font-size: 12px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px;">CRM Tags Classification</h4>
+                    <div id="crm-client-tags-chips" style="margin-bottom: 12px; display: flex; flex-wrap: wrap;">
+                        <!-- Chips loaded dynamically -->
+                    </div>
+                    
+                    <form id="crm-add-tag-form" style="display: flex; gap: 8px;">
+                        <input type="text" id="crm-new-tag-input" class="form-control" style="padding: 6px 12px; font-size: 13px;" placeholder="Add custom tag...">
+                        <button type="submit" class="btn-primary" style="padding: 0 16px; font-size: 13px;">Add</button>
+                    </form>
+                    <small style="color: var(--text-muted); font-size: 10px;">Tags cannot contain special characters (e.g. VIP, VIP-Rings).</small>
+                </div>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
+            
+            <div>
+                <h4 style="font-size: 12px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 10px;">Purchase Transaction History</h4>
+                <div id="crm-client-purchases" style="max-height: 180px; overflow-y: auto;">
+                    <!-- Purchases list dynamically populated -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TRANSACTION RECEIPT INVOICE MODAL -->
+    <div id="receipt-modal-overlay" class="modal-overlay">
+        <div class="modal" style="background: white; color: black; max-width: 480px; font-family: monospace; border: 1px solid #ccc; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+            
+            <!-- Receipt Printable Content Area -->
+            <div id="receipt-print-area" style="padding: 10px;">
+                <!-- Filled dynamically by showReceipt() -->
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 24px; border-top: 1px solid #eee; padding-top: 16px;" class="no-print">
+                <button type="button" id="receipt-print-btn" class="btn-primary" style="flex: 1; padding: 10px; background: #000; color: #fff;">🖨 Print Invoice</button>
+                <button type="button" id="receipt-close" class="filter-btn" style="flex: 1; padding: 10px; background: #eee; color: #333; border: 1px solid #ccc;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN EDIT PRODUCT MODAL -->
+    <div id="admin-edit-product-modal-overlay" class="modal-overlay">
+        <div class="modal glass-card" style="max-width: 500px;">
+            <div class="modal-header">
+                <span class="modal-title">Edit Jewelry Product</span>
+                <button type="button" id="admin-edit-product-modal-close" style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; float: right; font-size: 18px;">✖</button>
+            </div>
+            <form id="admin-edit-product-form">
+                <input type="hidden" id="admin-edit-prod-id">
+                <div class="form-group">
+                    <label for="admin-edit-prod-name">Product Name *</label>
+                    <input type="text" id="admin-edit-prod-name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="admin-edit-prod-category">Category *</label>
+                    <select id="admin-edit-prod-category" class="form-control" required>
+                        <option value="Rings">Rings</option>
+                        <option value="Earrings">Earrings</option>
+                        <option value="Necklaces">Necklaces</option>
+                        <option value="Bracelets">Bracelets</option>
+                    </select>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group">
+                        <label for="admin-edit-prod-weight">Weight (g) *</label>
+                        <input type="number" id="admin-edit-prod-weight" class="form-control" min="0.1" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="admin-edit-prod-making">Making charge/g (₹) *</label>
+                        <input type="number" id="admin-edit-prod-making" class="form-control" min="0" step="10" required>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group">
+                        <label for="admin-edit-prod-stone">Stone Value (₹) *</label>
+                        <input type="number" id="admin-edit-prod-stone" class="form-control" min="0" step="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="admin-edit-prod-stock">Stock Qty *</label>
+                        <input type="number" id="admin-edit-prod-stock" class="form-control" min="0" step="1" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="admin-edit-prod-image">Image URL</label>
+                    <input type="url" id="admin-edit-prod-image" class="form-control" placeholder="Optional Unsplash image URL">
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px; padding: 12px;">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- EMPLOYEE BARGAIN CHECKOUT MODAL -->
+    <div id="employee-bargain-checkout-modal-overlay" class="modal-overlay">
+        <div class="modal glass-card" style="max-width: 600px;">
+            <div class="modal-header">
+                <span class="modal-title">Finalize Bargain Checkout</span>
+                <button type="button" id="employee-bargain-checkout-modal-close" style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; float: right; font-size: 18px;">✖</button>
+            </div>
+            <form id="employee-bargain-checkout-form">
+                <input type="hidden" id="emp-checkout-deal-id">
+                
+                <h3 style="margin-bottom: 12px; font-size: 15px; font-weight: 600; color: var(--gold-light); border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">Customer Info</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                    <div>
+                        <span style="font-size: 12px; color: var(--text-secondary);">Client Name</span>
+                        <div id="emp-checkout-client-name" style="font-weight: 600; color: var(--text-primary);"></div>
+                    </div>
+                    <div>
+                        <span style="font-size: 12px; color: var(--text-secondary);">Phone Number</span>
+                        <div id="emp-checkout-client-phone" style="font-weight: 600; color: var(--text-primary);"></div>
+                    </div>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <span style="font-size: 12px; color: var(--text-secondary);">Email Address</span>
+                    <div id="emp-checkout-client-email" style="font-weight: 600; color: var(--text-primary);"></div>
+                </div>
+
+                <h3 style="margin-bottom: 12px; font-size: 15px; font-weight: 600; color: var(--gold-light); border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">Product Specifications</h3>
+                <div id="emp-checkout-specs-container" style="font-size: 13px; background: rgba(255,255,255,0.02); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px; max-height: 150px; overflow-y: auto;">
+                    <!-- Filled dynamically -->
+                </div>
+
+                <h3 style="margin-bottom: 12px; font-size: 15px; font-weight: 600; color: var(--gold-light); border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">Price Breakdown</h3>
+                <div class="cart-summary" style="margin-bottom: 16px; padding: 12px; background: rgba(255,255,255,0.01); border-radius: 8px;">
+                    <div class="summary-row" style="font-size: 13px;">
+                        <span>Original Catalog Price (Incl. Tax)</span>
+                        <span id="emp-checkout-original-total">₹0.00</span>
+                    </div>
+                    <div class="summary-row" style="color: var(--success); font-size: 13px;">
+                        <span>Negotiated Discount</span>
+                        <span id="emp-checkout-discount-amount">-₹0.00</span>
+                    </div>
+                    <div class="summary-row" style="font-size: 13px;">
+                        <span>Subtotal (After Discount)</span>
+                        <span id="emp-checkout-discounted-subtotal">₹0.00</span>
+                    </div>
+                    <div class="summary-row" style="font-size: 13px;">
+                        <span>GST Tax (3%)</span>
+                        <span id="emp-checkout-tax">₹0.00</span>
+                    </div>
+                    <div class="summary-row total" style="margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border-color);">
+                        <span>Agreed Grand Total</span>
+                        <span id="emp-checkout-total" style="color: var(--gold-primary); font-size: 16px;">₹0.00</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="emp-checkout-payment-method">In-Store Payment Method *</label>
+                    <select id="emp-checkout-payment-method" class="form-control" required>
+                        <option value="UPI">UPI</option>
+                        <option value="Card">Credit/Debit Card</option>
+                        <option value="Cash">Cash / In-Store Cash</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 16px; padding: 12px;">Finalize In-Store Bargain Checkout</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= FLOATING DYNAMIC TEST PANEL ================= -->
+    <section class="test-panel no-print">
+        <div class="test-header">
+            <div>
+                <h3 style="font-weight: 600; color: var(--gold-light);">Dynamic JS Integration Test Suite</h3>
+                <p style="font-size: 12px; color: var(--text-secondary)">Verify pricing engines, discount restrictions, and OTP state logic in the browser.</p>
+            </div>
+            <button id="run-tests-btn" class="btn-primary" style="background: var(--gold-gradient); color: var(--bg-primary); padding: 8px 24px;">Run Unit Tests</button>
+        </div>
+        <div id="test-results-log" class="test-results">
+            <div class="test-line" style="color: var(--text-muted);">Test results will log here upon execution.</div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 Aurelia Gold Jewellers. Built with Spec Kit Spec-Driven Development.</p>
+    </footer>
+
+    <!-- Script Loaders -->
+    <script src="js/repository.js"></script>
+    <script src="js/tests.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
