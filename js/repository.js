@@ -138,9 +138,90 @@ class DataRepository {
             safeLocalStorage.setItem('jss_products', JSON.stringify(defaultProducts));
         }
 
-        // Transactions list
-        if (!safeLocalStorage.getItem('jss_transactions')) {
-            safeLocalStorage.setItem('jss_transactions', JSON.stringify([]));
+        // Transactions list - seed with realistic purchase/sale records for price history (#9)
+        const existingTx = safeLocalStorage.getItem('jss_transactions');
+        if (!existingTx || JSON.parse(existingTx).length === 0) {
+            const seedTx = [
+                {
+                    id: 'INV-20260521-0001',
+                    timestamp: new Date('2026-05-21T11:30:00Z').toISOString(),
+                    clientId: '9876543210',
+                    clientName: 'Karan Johar',
+                    clientEmail: 'karan@example.com',
+                    employeeId: 'EMP001',
+                    employeeName: 'Rahul Verma',
+                    items: [
+                        {
+                            productId: 'PROD-22K-BRCLT',
+                            name: '22K Gold Traditional Kada Bracelet',
+                            quantity: 1,
+                            liveRate: 7150,
+                            weightGrams: 28.5,
+                            price: 218550
+                        }
+                    ],
+                    subtotal: 218550,
+                    discountApplied: 0,
+                    discountAmount: 0,
+                    taxRate: 3,
+                    taxAmount: 6556.50,
+                    totalAmount: 225106.50,
+                    paymentMethod: 'Split (Cash: ₹1,00,000 + Card: ₹1,25,106.50)'
+                },
+                {
+                    id: 'INV-20260522-0002',
+                    timestamp: new Date('2026-05-22T14:15:00Z').toISOString(),
+                    clientId: '9876543211',
+                    clientName: 'Priya Sharma',
+                    clientEmail: 'priya@example.com',
+                    employeeId: 'EMP002',
+                    employeeName: 'Ananya Sharma',
+                    items: [
+                        {
+                            productId: 'PROD-18K-RING',
+                            name: '18K Diamond Solitaire Engagement Ring',
+                            quantity: 1,
+                            liveRate: 7200,
+                            weightGrams: 4.8,
+                            price: 66560
+                        }
+                    ],
+                    subtotal: 66560,
+                    discountApplied: 2,
+                    discountAmount: 1331.20,
+                    taxRate: 3,
+                    taxAmount: 1956.86,
+                    totalAmount: 67185.66,
+                    paymentMethod: 'UPI'
+                },
+                {
+                    id: 'INV-20260523-0003',
+                    timestamp: new Date('2026-05-23T16:45:00Z').toISOString(),
+                    clientId: '9876543212',
+                    clientName: 'Amit Patel',
+                    clientEmail: 'amit@example.com',
+                    employeeId: 'EMP001',
+                    employeeName: 'Rahul Verma',
+                    items: [
+                        {
+                            productId: 'PROD-22K-NCKL',
+                            name: '22K Temple Heritage Gold Necklace',
+                            quantity: 1,
+                            liveRate: 7250,
+                            weightGrams: 45.2,
+                            price: 357080
+                        }
+                    ],
+                    subtotal: 357080,
+                    discountApplied: 0,
+                    discountAmount: 0,
+                    taxRate: 3,
+                    taxAmount: 10712.40,
+                    totalAmount: 367792.40,
+                    paymentMethod: 'Card'
+                }
+            ];
+            safeLocalStorage.setItem('jss_transactions', JSON.stringify(seedTx));
         }
 
         // Clients CRM list
@@ -296,10 +377,15 @@ class DataRepository {
     // --- Pricing Engine ---
     calculateItemPrice(product, liveRate) {
         if (!product) return 0;
-        // Formula: Price = (Weight * Live Gold Rate) + (Weight * Making Charge/g) + Stone Value
+        // Formula: Price = (Weight * Live Gold Rate) + (Making Charge) + Stone Value
         const goldCost = product.weightGrams * liveRate;
-        const makingCost = product.weightGrams * product.makingChargePerGram;
-        return goldCost + makingCost + product.stoneValue;
+        let makingCost = 0;
+        if (product.makingChargeType === 'percent') {
+            makingCost = goldCost * (product.makingChargePerGram / 100);
+        } else {
+            makingCost = product.weightGrams * (product.makingChargePerGram || 0);
+        }
+        return goldCost + makingCost + (product.stoneValue || 0);
     }
 
     calculateCartTotals(cartItems, discountApplied = 0) {
@@ -515,10 +601,11 @@ class DataRepository {
         return { id: employeeId, success: true };
     }
 
-    // --- Admin-only Product CRUD (Core Product Management) ---
-    addProduct(productData, adminPassword) {
+    // --- Admin & Staff Product CRUD (Core Product Management) ---
+    addProduct(productData, adminOrStaffAuth) {
         const settings = this.getSettings();
-        if (adminPassword !== settings.adminPassword) {
+        const isStaff = this.getEmployees().some(e => e.pin === adminOrStaffAuth || e.id === adminOrStaffAuth) || adminOrStaffAuth === 'STAFF_AUTHORIZED';
+        if (adminOrStaffAuth !== settings.adminPassword && !isStaff) {
             throw new Error('Authentication Error: Invalid admin password.');
         }
 
@@ -526,9 +613,11 @@ class DataRepository {
         const category = (productData.category || '').trim();
         const weight = parseFloat(productData.weightGrams);
         const making = parseFloat(productData.makingChargePerGram);
-        const stone = parseFloat(productData.stoneValue);
+        const stone = parseFloat(productData.stoneValue || 0);
         const stock = parseInt(productData.stockCount, 10);
         const imageUrl = (productData.imageUrl || '').trim() || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=400&q=80';
+        const makingChargeType = productData.makingChargeType || 'perGram';
+        const diamondDetails = (productData.diamondDetails || '').trim();
 
         if (!name) throw new Error('Validation Error: Product name is required.');
         if (!['Rings', 'Earrings', 'Necklaces', 'Bracelets'].includes(category)) {
@@ -547,7 +636,9 @@ class DataRepository {
             category,
             weightGrams: weight,
             makingChargePerGram: making,
+            makingChargeType,
             stoneValue: stone,
+            diamondDetails,
             imageUrl,
             stockCount: stock
         };

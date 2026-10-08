@@ -6,15 +6,13 @@
     <title>Aurelia Gold Jewellers | E-Commerce & Staff POS</title>
     <!-- Outfit Font & Stylesheet -->
     <link rel="stylesheet" href="css/styles.css">
+
 </head>
 <body>
 
     <!-- Header / Ticker / Navigation -->
     <header>
-        <div class="logo-container">
-            <span class="logo-icon">⚜</span>
-            <span class="logo-text">AURELIA</span>
-        </div>
+
 
         <div id="live-gold-ticker" class="live-price-ticker">
             <span>Live Gold Price:</span>
@@ -44,7 +42,10 @@
         <section id="customer-view" class="view-section active">
             <div class="catalog-header">
                 <h2>Exquisite Gold Catalogue</h2>
-                <input type="text" id="search-products" class="search-input" placeholder="Search rings, necklaces, etc...">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="search-products" class="search-input" placeholder="Search rings, necklaces, etc...">
+                    <button id="staff-add-product-shortcut-btn" class="btn-primary" style="white-space: nowrap; padding: 8px 16px; font-size: 13px;" title="Staff: Add new item to catalog">✨ Staff: + Add Item</button>
+                </div>
             </div>
 
             <!-- Customer Bargain Request Tracking -->
@@ -102,17 +103,95 @@
 
                     <h3 style="margin-top: 30px; margin-bottom: 20px; font-weight: 600; color: var(--gold-light);">2. Payment Option</h3>
                     <div class="form-group">
-                        <label for="checkout-payment-method">Method *</label>
+                        <label for="checkout-payment-method">Payment Method *</label>
                         <select id="checkout-payment-method" class="form-control" required>
-                            <option value="Card">Credit/Debit Card</option>
-                            <option value="UPI">UPI</option>
-                            <option value="Cash">Cash on Delivery</option>
+                            <option value="Card">Credit / Debit Card</option>
+                            <option value="UPI">UPI / Google Pay / PhonePe</option>
+                            <option value="Cash">Cash on Delivery / Counter Cash</option>
+                            <option value="NetBanking">Net Banking / NEFT</option>
+                            <option value="EMI">EMI (No Cost / Low Cost)</option>
+                            <option value="Split">Split / Multiple Payment Methods (Cash + Card + UPI)</option>
                         </select>
                     </div>
 
+                    <!-- Split Payment Details (#3) -->
+                    <div id="checkout-split-payment-container" style="display: none; background: rgba(212,175,55,0.04); border: 1px solid rgba(212,175,55,0.2); border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+                        <h4 style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gold-light); margin-bottom: 10px;">Multiple Payment Tender Allocation</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="split-cash-amount" style="font-size: 11px;">💵 Cash (₹)</label>
+                                <input type="number" id="split-cash-amount" class="form-control" min="0" step="1" placeholder="0" style="padding: 6px 10px; font-size: 12px;">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="split-card-amount" style="font-size: 11px;">💳 Card (₹)</label>
+                                <input type="number" id="split-card-amount" class="form-control" min="0" step="1" placeholder="0" style="padding: 6px 10px; font-size: 12px;">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="split-upi-amount" style="font-size: 11px;">📱 UPI (₹)</label>
+                                <input type="number" id="split-upi-amount" class="form-control" min="0" step="1" placeholder="0" style="padding: 6px 10px; font-size: 12px;">
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 11px; padding: 6px 10px; background: rgba(0,0,0,0.25); border-radius: 4px;">
+                            <span>Allocated: <strong id="split-allocated-total" style="color: var(--gold-light);">₹0.00</strong></span>
+                            <span>Remaining: <strong id="split-remaining-balance" style="color: var(--text-primary);">₹0.00</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- Making Charges Option Section (#6) -->
+                    <div style="margin-top: 20px; padding: 14px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px;">
+                        <label for="checkout-making-charge-preference" style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--gold-light); display: block; margin-bottom: 8px;">
+                            🛠️ Making Charges Preference
+                        </label>
+                        <select id="checkout-making-charge-preference" class="form-control">
+                            <option value="standard" selected>Standard Making Charges (Per Catalogue Rate)</option>
+                            <option value="festive_25">Festive Offer: 25% Off on Making Charges</option>
+                            <option value="festive_50">Special Privilege: 50% Off on Making Charges</option>
+                            <option value="zero_making">Mega Promotion: Zero (0%) Making Charges</option>
+                            <option value="custom">Custom Flat Making Charge Override</option>
+                        </select>
+                        <div id="checkout-custom-making-container" style="display: none; margin-top: 10px;">
+                            <label for="checkout-custom-making-value" style="font-size: 11px; color: var(--text-secondary);">Custom Making Charge (Flat ₹ for entire order)</label>
+                            <input type="number" id="checkout-custom-making-value" class="form-control" min="0" step="50" placeholder="e.g. 2500">
+                        </div>
+                        <div id="checkout-making-savings-note" style="display: none; margin-top: 8px; font-size: 11px; color: var(--success);">
+                            🎉 You are saving <span id="checkout-making-savings-amt">₹0.00</span> on making charges!
+                        </div>
+                    </div>
+
+                    <!-- Old Gold Exchange Section (#5) -->
+                    <div style="margin-top: 20px; padding: 14px; background: rgba(212,175,55,0.04); border: 1px solid rgba(212,175,55,0.2); border-radius: 8px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--gold-light);">
+                            <input type="checkbox" id="checkout-old-gold-toggle">
+                            ♻️ Exchange Old Gold for New Gold?
+                        </label>
+                        <div id="checkout-old-gold-fields" style="display: none; margin-top: 12px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label for="checkout-old-gold-weight">Old Gold Weight (g) *</label>
+                                    <input type="number" id="checkout-old-gold-weight" class="form-control" min="0.01" step="0.01" placeholder="e.g. 5.00">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label for="checkout-old-gold-purity">Purity (Karats)</label>
+                                    <select id="checkout-old-gold-purity" class="form-control">
+                                        <option value="24">24K (Pure Gold)</option>
+                                        <option value="22" selected>22K</option>
+                                        <option value="18">18K</option>
+                                        <option value="14">14K</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="checkout-old-gold-value">Estimated Old Gold Value (₹)</label>
+                                <input type="number" id="checkout-old-gold-value" class="form-control" min="0" step="0.01" placeholder="Auto-calculated or enter manually" readonly style="background: rgba(212,175,55,0.06);">
+                                <small style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 4px;">Calculated as: Weight × Live Gold Rate × (Karat / 24). Deducted directly from order total.</small>
+                            </div>
+                            <div id="checkout-old-gold-summary" style="display: none; margin-top: 10px; background: rgba(212,175,55,0.06); padding: 8px 12px; border-radius: 6px; border: 1px dashed rgba(212,175,55,0.3); font-size: 11px; color: var(--gold-light);"></div>
+                        </div>
+                    </div>
+
                     <!-- Bargaining section -->
-                    <div style="margin-top: 24px; padding: 16px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px;">
-                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; font-weight: 600; text-transform: uppercase; color: var(--gold-light);">
+                    <div style="margin-top: 16px; padding: 14px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--gold-light);">
                             <input type="checkbox" id="checkout-bargain-toggle">
                             Propose a Bargain Price?
                         </label>
@@ -125,10 +204,11 @@
                         </div>
                     </div>
 
-                    <div style="display: flex; gap: 12px; margin-top: 30px;">
+                    <div style="display: flex; gap: 12px; margin-top: 24px;">
                         <button type="button" class="filter-btn" style="flex: 1;" onclick="switchPortal('customer')">Back to Catalog</button>
                         <button type="submit" id="checkout-submit-btn" class="btn-primary" style="flex: 2; padding: 12px;">Send OTP & Verify Order</button>
                     </div>
+                </form>
                 </form>
 
                 <div class="glass-card">
@@ -140,6 +220,10 @@
                         <div class="summary-row">
                             <span>Subtotal</span>
                             <span id="checkout-subtotal">₹0.00</span>
+                        </div>
+                        <div id="checkout-old-gold-deduction-row" class="summary-row" style="color: var(--success); display: none;">
+                            <span>Old Gold Exchange</span>
+                            <span id="checkout-old-gold-deduction">-₹0.00</span>
                         </div>
                         <div class="summary-row">
                             <span>GST Tax (3%)</span>
@@ -447,7 +531,7 @@
                 <button id="owner-logout-btn" class="btn-primary" style="background: rgba(255, 255, 255, 0.05); color: var(--text-primary); border: 1px solid var(--border-color);">Logout Owner</button>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 30px;">
+            <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 30px; margin-bottom: 30px;">
                 <div class="glass-card">
                     <h3 style="margin-bottom: 20px; font-weight: 600; color: var(--gold-light);">Pending Price Bargain Proposals</h3>
                     <div class="table-container">
@@ -458,6 +542,7 @@
                                     <th>Items</th>
                                     <th>Original Price</th>
                                     <th>Proposed Price</th>
+                                    <th>Profit</th>
                                     <th style="text-align: right;">Action</th>
                                 </tr>
                             </thead>
@@ -474,6 +559,12 @@
                         <!-- Populated dynamically -->
                     </div>
                 </div>
+            </div>
+
+            <!-- Deal Profit Details Panel -->
+            <div class="glass-card" id="owner-profit-panel" style="display: none; margin-bottom: 30px;">
+                <h3 style="margin-bottom: 16px; font-weight: 600; color: var(--gold-light); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">📊 Deal Profit Breakdown</h3>
+                <div id="owner-profit-content"></div>
             </div>
         </section>
 
@@ -527,11 +618,17 @@
                         </div>
 
                         <div class="form-group">
+                            <label for="admin-global-making-charge">Global Making Charge Override (%) <span style="color: var(--text-muted); font-size: 11px;">optional</span></label>
+                            <input type="number" id="admin-global-making-charge" class="form-control" min="0" max="100" step="0.1" placeholder="e.g. 12 (applied on top of per-gram making charge)">
+                            <small style="color: var(--text-muted); font-size: 11px;">Sets a store-wide making charge percentage on all products. Leave blank to use per-product rates.</small>
+                        </div>
+
+                        <div class="form-group">
                             <label for="admin-rate-pass">Confirm Admin Password *</label>
                             <input type="password" id="admin-rate-pass" class="form-control" placeholder="Enter admin password" required>
                         </div>
 
-                        <button type="submit" class="btn-primary" style="margin-top: 10px; width: 100%; padding: 12px;">Update Live Gold Rate</button>
+                        <button type="submit" class="btn-primary" style="margin-top: 10px; width: 100%; padding: 12px;">Update Pricing Settings</button>
                     </form>
 
                     <!-- Settings Panel 2: Discount caps -->
@@ -588,6 +685,31 @@
                                 <!-- Filled dynamically -->
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Price History Panel -->
+                <div class="glass-card" style="margin-top: 30px;">
+                    <h3 style="margin-bottom: 16px; font-weight: 600; color: var(--gold-light); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">📜 Item Purchase & Sale Price History</h3>
+                    <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">Historical log of how much each item was bought and sold for in each transaction.</p>
+                    <div class="table-container">
+                        <table class="crm-table" style="font-size: 12px;">
+                            <thead>
+                                <tr>
+                                    <th>Invoice</th>
+                                    <th>Date</th>
+                                    <th>Client</th>
+                                    <th>Item</th>
+                                    <th>Gold Rate (at sale)</th>
+                                    <th>Item Cost Price</th>
+                                    <th>Sold Price</th>
+                                    <th>Profit/Loss</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-price-history-tbody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -679,8 +801,14 @@
                                     <input type="number" id="admin-prod-weight" class="form-control" min="0.1" step="0.01" placeholder="e.g. 10.5" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="admin-prod-making">Making/g (₹) *</label>
-                                    <input type="number" id="admin-prod-making" class="form-control" min="0" step="10" placeholder="e.g. 450" required>
+                                    <label for="admin-prod-making">Making Charges *</label>
+                                    <div style="display: flex; gap: 6px;">
+                                        <select id="admin-prod-making-type" class="form-control" style="max-width: 100px;">
+                                            <option value="perGram">₹ / g</option>
+                                            <option value="percent">% Gold</option>
+                                        </select>
+                                        <input type="number" id="admin-prod-making" class="form-control" min="0" step="1" placeholder="e.g. 450 or 12%" required>
+                                    </div>
                                 </div>
                             </div>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -932,13 +1060,98 @@
                 <div class="form-group">
                     <label for="emp-checkout-payment-method">In-Store Payment Method *</label>
                     <select id="emp-checkout-payment-method" class="form-control" required>
-                        <option value="UPI">UPI</option>
+                        <option value="UPI">UPI / Digital QR</option>
                         <option value="Card">Credit/Debit Card</option>
                         <option value="Cash">Cash / In-Store Cash</option>
+                        <option value="Split">Split / Multiple Payment Tender</option>
                     </select>
                 </div>
 
                 <button type="submit" class="btn-primary" style="width: 100%; margin-top: 16px; padding: 12px;">Finalize In-Store Bargain Checkout</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= STAFF ADD ITEM MODAL (#2) ================= -->
+    <div id="staff-add-item-modal-overlay" class="modal-overlay">
+        <div class="modal glass-card" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>✨ Staff: Create New Item for Sale</h3>
+                <button type="button" class="modal-close" id="staff-add-item-modal-close">&times;</button>
+            </div>
+            
+            <div id="staff-auth-prompt" style="display: none; padding: 16px; background: rgba(212,175,55,0.06); border-radius: 8px; border: 1px solid rgba(212,175,55,0.2); margin-bottom: 16px;">
+                <p style="color: var(--gold-light); font-weight: 600; font-size: 13px; margin-bottom: 6px;">Staff Authorization Required</p>
+                <p style="color: var(--text-secondary); font-size: 12px; margin-bottom: 10px;">Please enter your 4-digit staff PIN to unlock item creation:</p>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="password" id="staff-quick-pin" class="form-control" maxlength="4" placeholder="4-digit PIN (e.g. 1234)" style="max-width: 180px;">
+                    <button type="button" id="staff-quick-verify-btn" class="btn-primary" style="padding: 8px 16px;">Unlock</button>
+                </div>
+            </div>
+
+            <form id="staff-quick-add-product-form">
+                <div class="form-group">
+                    <label for="staff-prod-name">Jewellery Item Name *</label>
+                    <input type="text" id="staff-prod-name" class="form-control" placeholder="e.g. 22K Royal Floral Kundan Choker" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                        <label for="staff-prod-category">Category *</label>
+                        <select id="staff-prod-category" class="form-control" required>
+                            <option value="Rings">Rings</option>
+                            <option value="Earrings">Earrings</option>
+                            <option value="Necklaces">Necklaces</option>
+                            <option value="Bracelets">Bracelets</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="staff-prod-purity">Purity / Karat</label>
+                        <select id="staff-prod-purity" class="form-control">
+                            <option value="24K">24K (999 Hallmarked)</option>
+                            <option value="22K" selected>22K (916 Hallmarked)</option>
+                            <option value="18K">18K (750 Hallmarked)</option>
+                            <option value="14K">14K (585 Hallmarked)</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                        <label for="staff-prod-weight">Gross Weight (g) *</label>
+                        <input type="number" id="staff-prod-weight" class="form-control" min="0.1" step="0.01" placeholder="e.g. 16.50" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="staff-prod-making">Making Charges *</label>
+                        <div style="display: flex; gap: 6px;">
+                            <select id="staff-prod-making-type" class="form-control" style="max-width: 100px;">
+                                <option value="perGram">₹ / g</option>
+                                <option value="percent">% Gold</option>
+                            </select>
+                            <input type="number" id="staff-prod-making" class="form-control" min="0" step="1" placeholder="e.g. 450 or 12%" required>
+                        </div>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                        <label for="staff-prod-stone">Diamond / Stone Value (₹)</label>
+                        <input type="number" id="staff-prod-stone" class="form-control" min="0" step="50" placeholder="e.g. 15000" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="staff-prod-stock">Stock Quantity *</label>
+                        <input type="number" id="staff-prod-stock" class="form-control" min="1" step="1" placeholder="e.g. 2" value="1" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="staff-prod-diamond-details">Diamond / Stone Specs <span style="font-size: 11px; color: var(--text-muted);">(optional)</span></label>
+                    <input type="text" id="staff-prod-diamond-details" class="form-control" placeholder="e.g. Natural VVS-GH Diamond 0.35ct + Emeralds">
+                </div>
+                <div class="form-group">
+                    <label for="staff-prod-image">Product Image URL <span style="font-size: 11px; color: var(--text-muted);">(optional)</span></label>
+                    <input type="url" id="staff-prod-image" class="form-control" placeholder="https://images.unsplash.com/...">
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="filter-btn" id="staff-add-item-cancel-btn">Cancel</button>
+                    <button type="submit" class="btn-primary" style="padding: 10px 20px;">Add Item to Sale Catalogue</button>
+                </div>
             </form>
         </div>
     </div>

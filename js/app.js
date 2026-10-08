@@ -30,6 +30,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initOwnerPortal();
     initAdminPortal();
     initTestPanel();
+    initOldGoldExchange();
+    initStaffAddItem();
+    initSplitPayment();
+    initMakingChargePreference();
 
     // Initial render
     renderCatalog();
@@ -86,6 +90,12 @@ function switchPortal(portalName) {
             document.getElementById('owner-lock-view').classList.add('active');
             document.getElementById('owner-passcode').value = '';
         }
+    }
+
+    // Show staff "New Item" shortcut in catalog (#2)
+    const staffBtn = document.getElementById('staff-add-product-shortcut-btn');
+    if (staffBtn) {
+        staffBtn.style.display = 'inline-flex';
     }
 }
 
@@ -333,21 +343,108 @@ function renderCheckoutSummary() {
     if (!listContainer) return;
     listContainer.innerHTML = '';
 
-    const totals = repo.calculateCartTotals(cart, 0);
+    const settings = repo.getSettings();
+    const liveRate = settings.liveGoldRatePerGram;
+    const makingPref = document.getElementById('checkout-making-charge-preference')?.value || 'standard';
+    const customMakingVal = parseFloat(document.getElementById('checkout-custom-making-value')?.value) || 0;
 
-    totals.items.forEach(item => {
+    let totalGoldCost = 0;
+    let totalStandardMakingCost = 0;
+    let totalStoneCost = 0;
+
+    cart.forEach(item => {
+        const product = repo.getProductById(item.productId);
+        if (!product) return;
+
+        const karat = product.name.includes('24K') ? 24 : product.name.includes('22K') ? 22 : product.name.includes('18K') ? 18 : product.name.includes('14K') ? 14 : 22;
+        const purity = karat === 24 ? '999' : karat === 22 ? '916' : karat === 18 ? '750' : '585';
+        const grossWeight = product.weightGrams;
+        const stoneWeight = product.stoneValue > 0 ? (product.stoneValue / 12000).toFixed(2) : '0.00';
+        const netWeight = Math.max(0.1, grossWeight - parseFloat(stoneWeight)).toFixed(2);
+        const hsnCode = '7113'; // HSN Code for articles of jewellery
+        const goldCost = parseFloat(netWeight) * liveRate;
+
+        let unitMakingCost = 0;
+        let makingLabel = '';
+        if (product.makingChargeType === 'percent') {
+            unitMakingCost = goldCost * (product.makingChargePerGram / 100);
+            makingLabel = `${product.makingChargePerGram}% of Gold (₹${unitMakingCost.toFixed(2)})`;
+        } else {
+            unitMakingCost = grossWeight * (product.makingChargePerGram || 0);
+            makingLabel = `₹${product.makingChargePerGram}/g (₹${unitMakingCost.toFixed(2)})`;
+        }
+
+        const stoneValue = product.stoneValue || 0;
+        const diamondDetails = product.diamondDetails || (stoneValue > 0 ? `Natural Diamond / Precious Stones (~${stoneWeight} ct)` : 'None (Plain Hallmarked Gold)');
+
+        totalGoldCost += goldCost * item.quantity;
+        totalStandardMakingCost += unitMakingCost * item.quantity;
+        totalStoneCost += stoneValue * item.quantity;
+
+        const unitTotal = goldCost + unitMakingCost + stoneValue;
+        const lineTotal = unitTotal * item.quantity;
+
         const row = document.createElement('div');
-        row.className = 'summary-row';
+        row.style.cssText = 'margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px dashed rgba(255,255,255,0.08);';
         row.innerHTML = `
-            <span>${item.name} (${item.quantity}x)</span>
-            <span>₹${(item.price * item.quantity).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+            <div style="font-weight: 600; font-size: 13px; color: var(--gold-light); margin-bottom: 8px;">${item.name} <span style="color: var(--text-muted); font-weight: 400;">(${item.quantity}x)</span></div>
+            <table style="width: 100%; font-size: 11px; color: var(--text-secondary); border-collapse: collapse;">
+                <tr><td style="padding: 2px 0;">HSN Code</td><td style="text-align: right; color: var(--text-primary); font-family: monospace;">${hsnCode}</td></tr>
+                <tr><td style="padding: 2px 0;">Purity / Karat</td><td style="text-align: right; color: var(--text-primary);">${karat}K (${purity} Hallmarked)</td></tr>
+                <tr><td style="padding: 2px 0;">Gross Weight</td><td style="text-align: right; color: var(--text-primary);">${grossWeight}g</td></tr>
+                <tr><td style="padding: 2px 0;">Net Weight (Pure Gold)</td><td style="text-align: right; color: var(--text-primary);">${netWeight}g</td></tr>
+                <tr><td style="padding: 2px 0;">Live Gold Rate</td><td style="text-align: right; color: var(--text-primary);">₹${liveRate.toLocaleString()}/g</td></tr>
+                <tr><td style="padding: 2px 0;">Gold Metal Amount</td><td style="text-align: right; color: var(--text-primary);">₹${goldCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>
+                <tr><td style="padding: 2px 0;">Making Charges</td><td style="text-align: right; color: var(--text-primary);">${makingLabel}</td></tr>
+                <tr><td style="padding: 2px 0;">Diamond / Stone Specs</td><td style="text-align: right; color: var(--text-primary);">${diamondDetails}</td></tr>
+                <tr><td style="padding: 2px 0;">Diamond / Stone Price</td><td style="text-align: right; color: var(--text-primary);">₹${stoneValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>
+                <tr style="border-top: 1px dashed rgba(255,255,255,0.1); font-weight: 700;">
+                    <td style="padding: 4px 0; color: var(--gold-light);">Total Item Amount</td>
+                    <td style="text-align: right; color: var(--gold-primary);">₹${lineTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                </tr>
+            </table>
         `;
         listContainer.appendChild(row);
     });
 
-    document.getElementById('checkout-subtotal').innerText = `₹${totals.subtotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-    document.getElementById('checkout-tax').innerText = `₹${totals.taxAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-    document.getElementById('checkout-total').innerText = `₹${totals.totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    // Calculate effective making charges based on preference (#6)
+    let effectiveMakingCost = totalStandardMakingCost;
+    let makingSavings = 0;
+    if (makingPref === 'festive_25') {
+        makingSavings = totalStandardMakingCost * 0.25;
+        effectiveMakingCost = totalStandardMakingCost - makingSavings;
+    } else if (makingPref === 'festive_50') {
+        makingSavings = totalStandardMakingCost * 0.50;
+        effectiveMakingCost = totalStandardMakingCost - makingSavings;
+    } else if (makingPref === 'zero_making') {
+        makingSavings = totalStandardMakingCost;
+        effectiveMakingCost = 0;
+    } else if (makingPref === 'custom') {
+        effectiveMakingCost = customMakingVal;
+        makingSavings = Math.max(0, totalStandardMakingCost - effectiveMakingCost);
+    }
+
+    const savingsNote = document.getElementById('checkout-making-savings-note');
+    const savingsAmt = document.getElementById('checkout-making-savings-amt');
+    if (savingsNote && savingsAmt) {
+        if (makingSavings > 0) {
+            savingsNote.style.display = 'block';
+            savingsAmt.innerText = `₹${makingSavings.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+        } else {
+            savingsNote.style.display = 'none';
+        }
+    }
+
+    const subtotal = totalGoldCost + effectiveMakingCost + totalStoneCost;
+    const tax = subtotal * 0.03;
+    const grandTotal = subtotal + tax;
+
+    document.getElementById('checkout-subtotal').innerText = `₹${subtotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    document.getElementById('checkout-tax').innerText = `₹${tax.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    document.getElementById('checkout-total').innerText = `₹${grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+    // Re-apply old gold deduction and split calculations
+    updateOldGoldSummaryRow(grandTotal);
 }
 
 let activeOTPPhone = '';
@@ -516,6 +613,253 @@ function initCheckoutEvents() {
     }
 }
 
+// --- Old Gold Exchange Logic ---
+function initOldGoldExchange() {
+    const toggle = document.getElementById('checkout-old-gold-toggle');
+    const fields = document.getElementById('checkout-old-gold-fields');
+    const weightInp = document.getElementById('checkout-old-gold-weight');
+    const puritySel = document.getElementById('checkout-old-gold-purity');
+    const valueInp = document.getElementById('checkout-old-gold-value');
+
+    if (!toggle) return;
+
+    toggle.addEventListener('change', () => {
+        fields.style.display = toggle.checked ? 'block' : 'none';
+        if (!toggle.checked) {
+            document.getElementById('checkout-old-gold-deduction-row').style.display = 'none';
+            document.getElementById('checkout-old-gold-summary').style.display = 'none';
+            updateOldGoldSummaryRow();
+        }
+    });
+
+    const recalc = () => {
+        const weight = parseFloat(weightInp.value) || 0;
+        const karat = parseInt(puritySel.value) || 22;
+        const settings = repo.getSettings();
+        const liveRate = settings.liveGoldRatePerGram;
+        const estimatedValue = weight * liveRate * (karat / 24);
+        valueInp.value = estimatedValue > 0 ? estimatedValue.toFixed(2) : '';
+        updateOldGoldSummaryRow();
+    };
+
+    weightInp.addEventListener('input', recalc);
+    puritySel.addEventListener('change', recalc);
+}
+
+function updateOldGoldSummaryRow(computedGrandTotal) {
+    const toggle = document.getElementById('checkout-old-gold-toggle');
+    const deductionRow = document.getElementById('checkout-old-gold-deduction-row');
+    const deductionSpan = document.getElementById('checkout-old-gold-deduction');
+    const oldGoldSummary = document.getElementById('checkout-old-gold-summary');
+    const totalSpan = document.getElementById('checkout-total');
+
+    if (!toggle || !toggle.checked) {
+        if (deductionRow) deductionRow.style.display = 'none';
+        if (oldGoldSummary) oldGoldSummary.style.display = 'none';
+        return;
+    }
+
+    const valueInp = document.getElementById('checkout-old-gold-value');
+    const weightInp = document.getElementById('checkout-old-gold-weight');
+    const puritySel = document.getElementById('checkout-old-gold-purity');
+    const exchangeValue = parseFloat(valueInp ? valueInp.value : 0) || 0;
+
+    let baseTotal = computedGrandTotal;
+    if (baseTotal === undefined) {
+        const subtotalText = document.getElementById('checkout-subtotal')?.innerText.replace(/[₹,]/g, '') || '0';
+        const taxText = document.getElementById('checkout-tax')?.innerText.replace(/[₹,]/g, '') || '0';
+        baseTotal = (parseFloat(subtotalText) || 0) + (parseFloat(taxText) || 0);
+    }
+
+    if (exchangeValue > 0 && deductionRow) {
+        deductionRow.style.display = 'flex';
+        deductionSpan.innerText = `-₹${exchangeValue.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+        const newTotal = Math.max(0, baseTotal - exchangeValue);
+        if (totalSpan) totalSpan.innerText = `₹${newTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+        if (oldGoldSummary) {
+            const weight = parseFloat(weightInp ? weightInp.value : 0) || 0;
+            const karat = parseInt(puritySel ? puritySel.value : 22) || 22;
+            oldGoldSummary.style.display = 'block';
+            oldGoldSummary.innerHTML = `
+                ⚖️ Old Gold: <strong>${weight}g @ ${karat}K</strong> &nbsp;&nbsp;|&nbsp;&nbsp;
+                Value: <strong>₹${exchangeValue.toLocaleString(undefined, {minimumFractionDigits: 2})}</strong> &nbsp;&nbsp;|&nbsp;&nbsp;
+                Net Payable: <strong>₹${newTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</strong>
+            `;
+        }
+    } else if (deductionRow) {
+        deductionRow.style.display = 'none';
+        if (oldGoldSummary) oldGoldSummary.style.display = 'none';
+    }
+}
+
+// --- Staff: Add Item for Sale Modal Handler (#2) ---
+function initStaffAddItem() {
+    const btn = document.getElementById('staff-add-product-shortcut-btn');
+    const modal = document.getElementById('staff-add-item-modal-overlay');
+    const closeBtn = document.getElementById('staff-add-item-modal-close');
+    const cancelBtn = document.getElementById('staff-add-item-cancel-btn');
+    const authPrompt = document.getElementById('staff-auth-prompt');
+    const quickPinInp = document.getElementById('staff-quick-pin');
+    const verifyPinBtn = document.getElementById('staff-quick-verify-btn');
+    const form = document.getElementById('staff-quick-add-product-form');
+
+    if (!btn || !modal) return;
+
+    btn.addEventListener('click', () => {
+        modal.classList.add('active');
+        if (activeEmployee) {
+            authPrompt.style.display = 'none';
+            form.style.display = 'block';
+        } else {
+            authPrompt.style.display = 'block';
+            form.style.display = 'none';
+            quickPinInp.value = '';
+            quickPinInp.focus();
+        }
+    });
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        form.reset();
+        quickPinInp.value = '';
+    };
+
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+    if (verifyPinBtn) {
+        verifyPinBtn.addEventListener('click', () => {
+            const pin = quickPinInp.value.trim();
+            const employees = repo.getEmployees();
+            const found = employees.find(e => e.pin === pin);
+            if (found) {
+                activeEmployee = found;
+                authPrompt.style.display = 'none';
+                form.style.display = 'block';
+                showGlobalAlert(`Staff Verified: Welcome ${found.name}`, 'success');
+            } else {
+                showGlobalAlert('Invalid Staff PIN. Please try again.', 'error');
+            }
+        });
+    }
+
+    if (form) {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('staff-prod-name').value.trim();
+            const category = document.getElementById('staff-prod-category').value;
+            const purity = document.getElementById('staff-prod-purity').value;
+            const weight = parseFloat(document.getElementById('staff-prod-weight').value);
+            const making = parseFloat(document.getElementById('staff-prod-making').value);
+            const makingType = document.getElementById('staff-prod-making-type').value;
+            const stone = parseFloat(document.getElementById('staff-prod-stone').value) || 0;
+            const stock = parseInt(document.getElementById('staff-prod-stock').value, 10) || 1;
+            const diamondDetails = document.getElementById('staff-prod-diamond-details').value.trim();
+            let image = document.getElementById('staff-prod-image').value.trim();
+
+            if (!image) {
+                if (category === 'Rings') image = 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=400&q=80';
+                else if (category === 'Earrings') image = 'https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=400&q=80';
+                else if (category === 'Necklaces') image = 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=400&q=80';
+                else image = 'https://images.unsplash.com/photo-1611591475871-331215bfa602?auto=format&fit=crop&w=400&q=80';
+            }
+
+            const fullName = name.includes(purity) ? name : `${purity} ${name}`;
+
+            try {
+                repo.addProduct({
+                    name: fullName,
+                    category,
+                    weightGrams: weight,
+                    makingChargePerGram: making,
+                    makingChargeType: makingType,
+                    stoneValue: stone,
+                    diamondDetails,
+                    stockCount: stock,
+                    imageUrl: image
+                }, 'STAFF_AUTHORIZED');
+
+                showGlobalAlert(`New item "${fullName}" added to sale catalogue!`, 'success');
+                renderCatalog();
+                closeModal();
+            } catch (err) {
+                showGlobalAlert(err.message, 'error');
+            }
+        });
+    }
+}
+
+// --- Multiple / Split Payment Option Handler (#3) ---
+function initSplitPayment() {
+    const methodSel = document.getElementById('checkout-payment-method');
+    const container = document.getElementById('checkout-split-payment-container');
+    const cashInp = document.getElementById('split-cash-amount');
+    const cardInp = document.getElementById('split-card-amount');
+    const upiInp = document.getElementById('split-upi-amount');
+    const allocTotal = document.getElementById('split-allocated-total');
+    const remBal = document.getElementById('split-remaining-balance');
+
+    if (!methodSel || !container) return;
+
+    const updateSplitTotals = () => {
+        const cash = parseFloat(cashInp?.value) || 0;
+        const card = parseFloat(cardInp?.value) || 0;
+        const upi = parseFloat(upiInp?.value) || 0;
+        const allocated = cash + card + upi;
+
+        const totalText = document.getElementById('checkout-total')?.innerText.replace(/[₹,]/g, '') || '0';
+        const netPayable = parseFloat(totalText) || 0;
+        const remaining = netPayable - allocated;
+
+        if (allocTotal) allocTotal.innerText = `₹${allocated.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+        if (remBal) {
+            if (Math.abs(remaining) < 0.01) {
+                remBal.innerText = '₹0.00 (Fully Settled)';
+                remBal.style.color = 'var(--success)';
+            } else if (remaining > 0) {
+                remBal.innerText = `₹${remaining.toLocaleString(undefined, {minimumFractionDigits: 2})} (Remaining)`;
+                remBal.style.color = 'var(--error)';
+            } else {
+                remBal.innerText = `-₹${Math.abs(remaining).toLocaleString(undefined, {minimumFractionDigits: 2})} (Overpaid)`;
+                remBal.style.color = 'var(--warning)';
+            }
+        }
+    };
+
+    methodSel.addEventListener('change', () => {
+        container.style.display = methodSel.value === 'Split' ? 'block' : 'none';
+        updateSplitTotals();
+    });
+
+    [cashInp, cardInp, upiInp].forEach(inp => {
+        if (inp) inp.addEventListener('input', updateSplitTotals);
+    });
+}
+
+// --- Making Charges Option Preference Handler (#6) ---
+function initMakingChargePreference() {
+    const prefSel = document.getElementById('checkout-making-charge-preference');
+    const customContainer = document.getElementById('checkout-custom-making-container');
+    const customInp = document.getElementById('checkout-custom-making-value');
+
+    if (!prefSel) return;
+
+    prefSel.addEventListener('change', () => {
+        if (customContainer) {
+            customContainer.style.display = prefSel.value === 'custom' ? 'block' : 'none';
+        }
+        renderCheckoutSummary();
+    });
+
+    if (customInp) {
+        customInp.addEventListener('input', () => {
+            renderCheckoutSummary();
+        });
+    }
+}
+
 function clearOTPinp() {
     document.querySelectorAll('.otp-code-inp').forEach(inp => inp.value = '');
     document.getElementById('otp-c1').focus();
@@ -571,7 +915,28 @@ function finalizeCheckout() {
     const name = document.getElementById('checkout-name').value.trim();
     const phone = document.getElementById('checkout-phone').value.trim();
     const email = document.getElementById('checkout-email').value.trim();
-    const method = document.getElementById('checkout-payment-method').value;
+    const methodSel = document.getElementById('checkout-payment-method').value;
+    const oldGoldToggle = document.getElementById('checkout-old-gold-toggle');
+    const oldGoldValue = oldGoldToggle && oldGoldToggle.checked
+        ? parseFloat(document.getElementById('checkout-old-gold-value').value) || 0
+        : 0;
+    const oldGoldWeight = oldGoldToggle && oldGoldToggle.checked
+        ? parseFloat(document.getElementById('checkout-old-gold-weight').value) || 0
+        : 0;
+    const oldGoldKarat = oldGoldToggle && oldGoldToggle.checked
+        ? parseInt(document.getElementById('checkout-old-gold-purity').value) || 0
+        : 0;
+
+    let finalPaymentMethod = methodSel;
+    if (methodSel === 'Split') {
+        const cash = parseFloat(document.getElementById('split-cash-amount')?.value) || 0;
+        const card = parseFloat(document.getElementById('split-card-amount')?.value) || 0;
+        const upi = parseFloat(document.getElementById('split-upi-amount')?.value) || 0;
+        finalPaymentMethod = `Split (Cash: ₹${cash.toFixed(2)}, Card: ₹${card.toFixed(2)}, UPI: ₹${upi.toFixed(2)})`;
+    }
+
+    const totals = repo.calculateCartTotals(cart, 0);
+    const netPayable = Math.max(0, totals.totalAmount - oldGoldValue);
 
     const payload = {
         clientId: phone,
@@ -580,7 +945,9 @@ function finalizeCheckout() {
         employeeId: null, // direct online
         items: cart,
         discountApplied: 0,
-        paymentMethod: method
+        paymentMethod: finalPaymentMethod,
+        oldGoldExchange: oldGoldValue > 0 ? { weightGrams: oldGoldWeight, karat: oldGoldKarat, estimatedValue: oldGoldValue } : null,
+        netPayable: oldGoldValue > 0 ? netPayable : totals.totalAmount
     };
 
     try {
@@ -653,15 +1020,21 @@ function showReceipt(tx) {
                     <span>-₹${tx.discountAmount.toFixed(2)}</span>
                 </div>
             ` : ''}
+            ${tx.oldGoldExchange ? `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px; color: #16a34a;">
+                    <span>Old Gold Exchange (${tx.oldGoldExchange.weightGrams}g @ ${tx.oldGoldExchange.karat}K):</span>
+                    <span>-₹${tx.oldGoldExchange.estimatedValue.toFixed(2)}</span>
+                </div>
+            ` : ''}
             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
                 <span>Tax (${tx.taxRate}%):</span>
                 <span>₹${tx.taxAmount.toFixed(2)}</span>
             </div>
             <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 16px; margin-top: 8px; border-top: 1px solid #000; padding-top: 8px;">
                 <span>Total Paid:</span>
-                <span>₹${tx.totalAmount.toFixed(2)}</span>
+                <span>₹${(tx.netPayable !== undefined ? tx.netPayable : tx.totalAmount).toFixed(2)}</span>
             </div>
-            <div style="margin-top: 4px; font-size: 11px; text-transform: uppercase;">
+            <div style="margin-top: 6px; font-size: 11px; text-transform: uppercase;">
                 <span>Payment Method: <strong>${tx.paymentMethod}</strong></span>
             </div>
         </div>
@@ -1221,11 +1594,19 @@ function initAdminPortal() {
             const pass = document.getElementById('admin-rate-pass').value;
 
             try {
+                const makingChargePct = parseFloat(document.getElementById('admin-global-making-charge').value) || null;
                 repo.updateGoldRate(rate, pass);
+                if (makingChargePct !== null) {
+                    const settings = repo.getSettings();
+                    settings.globalMakingChargePct = makingChargePct;
+                    safeLocalStorage.setItem('jss_settings', JSON.stringify(settings));
+                    showGlobalAlert(`Gold rate & global making charge (${makingChargePct}%) updated!`, 'success');
+                } else {
+                    showGlobalAlert('Live gold price updated successfully!', 'success');
+                }
                 document.getElementById('admin-rate-pass').value = '';
                 updateLiveRateTicker();
                 renderAdminDashboard();
-                showGlobalAlert('Live gold price updated successfully!', 'success');
             } catch (err) {
                 showGlobalAlert(err.message, 'error');
             }
@@ -1268,6 +1649,7 @@ function initAdminPortal() {
             const category = document.getElementById('admin-prod-category').value;
             const weight = parseFloat(document.getElementById('admin-prod-weight').value);
             const making = parseFloat(document.getElementById('admin-prod-making').value);
+            const makingType = document.getElementById('admin-prod-making-type')?.value || 'perGram';
             const stone = parseFloat(document.getElementById('admin-prod-stone').value);
             const stock = parseInt(document.getElementById('admin-prod-stock').value, 10);
             const image = document.getElementById('admin-prod-image').value.trim();
@@ -1277,6 +1659,7 @@ function initAdminPortal() {
                 category,
                 weightGrams: weight,
                 makingChargePerGram: making,
+                makingChargeType: makingType,
                 stoneValue: stone,
                 stockCount: stock,
                 imageUrl: image
@@ -1366,8 +1749,14 @@ function renderAdminDashboard() {
     const settings = repo.getSettings();
     
     // Fill values
-    document.getElementById('admin-current-rate').innerText = `₹${settings.liveGoldRatePerGram.toFixed(2)}`;
+    document.getElementById('admin-current-rate').innerText = `₹${settings.liveGoldRatePerGram.toFixed(2)}/g`;
     document.getElementById('admin-gold-rate').value = settings.liveGoldRatePerGram;
+
+    // Load making charge setting
+    const adminGlobalMakingInput = document.getElementById('admin-global-making-charge');
+    if (adminGlobalMakingInput && settings.globalMakingChargePct !== undefined) {
+        adminGlobalMakingInput.value = settings.globalMakingChargePct;
+    }
 
     // Fill employees dropdown and discount limits
     const employees = repo.getEmployees();
@@ -1421,6 +1810,57 @@ function renderAdminDashboard() {
             `;
         });
     }
+
+    // Render price history table
+    renderAdminPriceHistory();
+}
+
+// --- Admin: Price History Table (#9) ---
+function renderAdminPriceHistory() {
+    const tbody = document.getElementById('admin-price-history-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const transactions = repo.getTransactions();
+    if (transactions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 20px;">No transaction history yet.</td></tr>';
+        return;
+    }
+
+    // Sort newest first
+    const sorted = [...transactions].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    sorted.forEach(tx => {
+        const date = new Date(tx.timestamp).toLocaleDateString();
+        const liveRate = tx.items[0] ? tx.items[0].liveRate : 0;
+
+        tx.items.forEach(item => {
+            // Cost price estimate per item (gold cost + making + stone at approximate acquisition)
+            const goldCost = item.weightGrams * liveRate;
+            const product = repo.getProductById(item.productId);
+            const makingCost = product ? item.weightGrams * product.makingChargePerGram : 0;
+            const stoneVal = product ? product.stoneValue : 0;
+            const costPrice = (goldCost * 0.85) + (makingCost * 0.7) + (stoneVal * 0.8);
+            const soldPerUnit = item.price || 0;
+            const profitPerUnit = soldPerUnit - costPrice;
+            const totalProfit = profitPerUnit * item.quantity;
+            const profitColor = totalProfit >= 0 ? 'var(--success)' : 'var(--error)';
+            const profitSign = totalProfit >= 0 ? '+' : '';
+
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong style="font-size: 11px;">${tx.id}</strong></td>
+                    <td style="font-size: 11px;">${date}</td>
+                    <td style="font-size: 11px;">${tx.clientName}</td>
+                    <td style="font-size: 11px;">${item.name} (${item.quantity}x, ${item.weightGrams}g)</td>
+                    <td style="font-size: 11px;">\u20b9${liveRate.toFixed(2)}/g</td>
+                    <td style="font-size: 11px; color: var(--text-muted);">\u20b9${costPrice.toFixed(2)} <span style="font-size: 10px;">(est.)</span></td>
+                    <td style="font-size: 11px; color: var(--gold-light);">\u20b9${soldPerUnit.toFixed(2)}</td>
+                    <td style="font-size: 11px; font-weight: 700; color: ${profitColor};">${profitSign}\u20b9${totalProfit.toFixed(2)}</td>
+                </tr>
+            `;
+        });
+    });
 }
 
 // --- Global Alerts system (Custom gold notification toasts) ---
@@ -1674,10 +2114,22 @@ function renderOwnerDashboard() {
         pendingTbody.innerHTML = '';
         const pending = deals.filter(d => d.status === 'Pending Approval');
         if (pending.length === 0) {
-            pendingTbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">No pending bargain proposals.</td></tr>';
+            pendingTbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">No pending bargain proposals.</td></tr>';
         } else {
             pending.forEach(d => {
                 const itemsSummary = d.items.map(i => `${i.name} (${i.quantity}x)`).join('<br>');
+                // Calculate cost price for the items at time of deal creation
+                let costPrice = 0;
+                d.items.forEach(item => {
+                    const product = repo.getProductById(item.productId);
+                    if (product) {
+                        costPrice += (item.weightGrams * item.liveRate * 0.85) + (item.weightGrams * product.makingChargePerGram * 0.7) + (product.stoneValue * 0.8);
+                    }
+                });
+                const profit = d.proposedPrice - costPrice;
+                const profitColor = profit >= 0 ? 'var(--success)' : 'var(--error)';
+                const profitSign = profit >= 0 ? '+' : '';
+
                 pendingTbody.innerHTML += `
                     <tr>
                         <td>
@@ -1687,10 +2139,12 @@ function renderOwnerDashboard() {
                         <td style="font-size: 11px;">${itemsSummary}</td>
                         <td>₹${d.originalTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
                         <td style="color: var(--gold-primary); font-weight: 700;">₹${d.proposedPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                        <td style="color: ${profitColor}; font-weight: 700; font-size: 12px;">${profitSign}₹${profit.toFixed(2)}</td>
                         <td style="text-align: right;">
-                            <div style="display: flex; gap: 6px; justify-content: flex-end;">
-                                <button type="button" class="btn-primary" style="padding: 4px 12px; font-size: 12px; background: var(--success); color: var(--bg-primary);" onclick="ownerDecision('${d.id}', 'Approved')">Approve</button>
-                                <button type="button" class="btn-primary" style="padding: 4px 12px; font-size: 12px; background: var(--error); color: var(--text-primary);" onclick="ownerDecision('${d.id}', 'Rejected')">Reject</button>
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <button type="button" class="btn-primary" style="padding: 4px 10px; font-size: 11px; background: var(--success); color: var(--bg-primary);" onclick="ownerDecision('${d.id}', 'Approved')">Approve</button>
+                                <button type="button" class="btn-primary" style="padding: 4px 10px; font-size: 11px; background: var(--error); color: var(--text-primary);" onclick="ownerDecision('${d.id}', 'Rejected')">Reject</button>
+                                <button type="button" class="filter-btn" style="padding: 4px 10px; font-size: 11px;" onclick="showDealProfitDetails('${d.id}')">📊 Details</button>
                             </div>
                         </td>
                     </tr>
@@ -1723,6 +2177,9 @@ function renderOwnerDashboard() {
                         <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
                             Price: ₹${d.proposedPrice.toFixed(2)} (Original: ₹${d.originalTotal.toFixed(2)})
                         </div>
+                        <div style="margin-top: 8px; text-align: right;">
+                            <button type="button" class="filter-btn" style="padding: 2px 8px; font-size: 11px;" onclick="showDealProfitDetails('${d.id}')">📊 Deal Details & Profit</button>
+                        </div>
                     </div>
                 `;
             });
@@ -1739,6 +2196,78 @@ function ownerDecision(dealId, status) {
     } catch (err) {
         showGlobalAlert(err.message, 'error');
     }
+}
+
+function showDealProfitDetails(dealId) {
+    const deals = repo.getDeals();
+    const deal = deals.find(d => d.id === dealId);
+    if (!deal) return;
+
+    const panel = document.getElementById('owner-profit-panel');
+    const content = document.getElementById('owner-profit-content');
+    if (!panel || !content) return;
+
+    let itemsHtml = '';
+    let totalCostPrice = 0;
+
+    deal.items.forEach(item => {
+        const product = repo.getProductById(item.productId);
+        const goldCost = item.weightGrams * item.liveRate;
+        const makingCost = product ? item.weightGrams * product.makingChargePerGram : 0;
+        const stoneValue = product ? product.stoneValue : 0;
+        // Estimated cost to the shop (approximate acquisition cost: 85% of gold cost + 70% of making + 80% of stone)
+        const approxCost = (goldCost * 0.85) + (makingCost * 0.7) + (stoneValue * 0.8);
+        const catalogPrice = goldCost + makingCost + stoneValue;
+        totalCostPrice += approxCost * item.quantity;
+
+        itemsHtml += `
+            <div style="margin-bottom: 12px; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid var(--border-color);">
+                <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">${item.name} (${item.quantity}x)</div>
+                <table style="width: 100%; font-size: 12px; color: var(--text-secondary);">
+                    <tr><td>Gold at Rate ₹${item.liveRate}/g × ${item.weightGrams}g</td><td style="text-align:right;">₹${goldCost.toFixed(2)}</td></tr>
+                    <tr><td>Making Charges</td><td style="text-align:right;">₹${makingCost.toFixed(2)}</td></tr>
+                    <tr><td>Stone / Diamond Value</td><td style="text-align:right;">₹${stoneValue.toFixed(2)}</td></tr>
+                    <tr style="border-top: 1px dashed rgba(255,255,255,0.1); font-weight: 600; color: var(--gold-light);"><td>Catalogue Unit Price</td><td style="text-align:right;">₹${catalogPrice.toFixed(2)}</td></tr>
+                    <tr style="color: var(--text-muted);"><td>Est. Acquisition Cost (~)</td><td style="text-align:right;">₹${approxCost.toFixed(2)}</td></tr>
+                </table>
+            </div>
+        `;
+    });
+
+    const agreedPrice = deal.proposedPrice;
+    const discount = deal.originalTotal - agreedPrice;
+    const discountPct = ((discount / deal.originalTotal) * 100).toFixed(1);
+    const estimatedProfit = agreedPrice - totalCostPrice;
+    const profitColor = estimatedProfit >= 0 ? 'var(--success)' : 'var(--error)';
+    const marginPct = agreedPrice > 0 ? ((estimatedProfit / agreedPrice) * 100).toFixed(1) : 0;
+
+    content.innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div>
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Original Catalogue Total</div>
+                <div style="font-size: 20px; font-weight: 700; color: var(--text-primary);">₹${deal.originalTotal.toFixed(2)}</div>
+            </div>
+            <div>
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Proposed / Agreed Price</div>
+                <div style="font-size: 20px; font-weight: 700; color: var(--gold-primary);">₹${agreedPrice.toFixed(2)}</div>
+            </div>
+            <div>
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Discount Given</div>
+                <div style="font-size: 18px; font-weight: 700; color: var(--error);">-₹${discount.toFixed(2)} (${discountPct}%)</div>
+            </div>
+            <div>
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Estimated Gross Profit</div>
+                <div style="font-size: 18px; font-weight: 700; color: ${profitColor};">₹${estimatedProfit.toFixed(2)} (${marginPct}% margin)</div>
+            </div>
+        </div>
+        <div style="margin-bottom: 16px; font-size: 11px; color: var(--text-muted); background: rgba(255,165,0,0.05); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,165,0,0.15);">
+            ⚠️ Note: Estimated profit uses approximate acquisition cost ratios (85% gold, 70% making, 80% stone). Actual profit depends on purchase records.
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">${itemsHtml}</div>
+    `;
+
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function renderCustomerDeals(phone) {
