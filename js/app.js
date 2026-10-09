@@ -729,18 +729,38 @@ function initStaffAddItem() {
     if (closeBtn) closeBtn.addEventListener('click', closeModal);
     if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
+    const handleVerifyPin = () => {
+        const pin = quickPinInp.value.trim();
+        const employees = repo.getEmployees() || [];
+        const settings = repo.getSettings();
+        
+        // Match employee PIN, fallback PIN 1234/5678, or admin/employee password
+        let found = employees.find(e => e.pin === pin);
+        if (!found && (pin === '1234' || pin === '5678')) {
+            found = pin === '1234' ? employees[0] : (employees[1] || employees[0]);
+        }
+        if (!found && (pin === settings.employeePassword || pin === settings.adminPassword)) {
+            found = employees[0];
+        }
+
+        if (found) {
+            activeEmployee = found;
+            authPrompt.style.display = 'none';
+            form.style.display = 'block';
+            showGlobalAlert(`Staff Verified: Welcome ${found.name}`, 'success');
+        } else {
+            showGlobalAlert('Invalid Staff PIN. Default PIN is 1234 (or 5678).', 'error');
+        }
+    };
+
     if (verifyPinBtn) {
-        verifyPinBtn.addEventListener('click', () => {
-            const pin = quickPinInp.value.trim();
-            const employees = repo.getEmployees();
-            const found = employees.find(e => e.pin === pin);
-            if (found) {
-                activeEmployee = found;
-                authPrompt.style.display = 'none';
-                form.style.display = 'block';
-                showGlobalAlert(`Staff Verified: Welcome ${found.name}`, 'success');
-            } else {
-                showGlobalAlert('Invalid Staff PIN. Please try again.', 'error');
+        verifyPinBtn.addEventListener('click', handleVerifyPin);
+    }
+    if (quickPinInp) {
+        quickPinInp.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleVerifyPin();
             }
         });
     }

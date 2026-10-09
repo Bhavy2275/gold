@@ -69,12 +69,14 @@ class DataRepository {
         }
 
         // Default employees
-        if (!safeLocalStorage.getItem('jss_employees')) {
+        const existingEmp = safeLocalStorage.getItem('jss_employees');
+        if (!existingEmp) {
             const defaultEmployees = [
                 {
                     id: 'emp-101',
                     name: 'Rahul Sharma',
                     role: 'Sales Associate',
+                    pin: '1234',
                     maxDiscountLimit: 10.00, // 10%
                     salesTotal: 0.00,
                     commissionEarned: 0.00
@@ -83,12 +85,30 @@ class DataRepository {
                     id: 'emp-102',
                     name: 'Priya Patel',
                     role: 'Store Manager',
+                    pin: '5678',
                     maxDiscountLimit: 25.00, // 25%
                     salesTotal: 0.00,
                     commissionEarned: 0.00
                 }
             ];
             safeLocalStorage.setItem('jss_employees', JSON.stringify(defaultEmployees));
+        } else {
+            // Ensure pin exists on existing employees in localStorage
+            try {
+                const emps = JSON.parse(existingEmp);
+                let changed = false;
+                emps.forEach((emp, idx) => {
+                    if (!emp.pin) {
+                        emp.pin = idx === 0 ? '1234' : (idx === 1 ? '5678' : `123${idx}`);
+                        changed = true;
+                    }
+                });
+                if (changed) {
+                    safeLocalStorage.setItem('jss_employees', JSON.stringify(emps));
+                }
+            } catch (e) {
+                console.error("Error patching employee PINs", e);
+            }
         }
 
         // Default products
